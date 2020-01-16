@@ -1,0 +1,31 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    discovery.3scale.net/discovery-version: v1
+    discovery.3scale.net/description-path: /openapi.json
+    discovery.3scale.net/scheme: http
+    discovery.3scale.net/port: "8080"
+    fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+    fabric8.io/iconUrl: img/icons/camel.svg
+    fabric8.io/git-branch: master
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9779"
+  labels:
+    discovery.3scale.net: "true"
+    app: jso-fwk-fuse-amq
+    provider: fabric8
+    version: ALFA-1.0.0-5
+    group: com.javanes.framework
+  name: jso-fwk-fuse-amq
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: jso-fwk-fuse-amq
+    provider: fabric8
+    group: com.javanes.framework

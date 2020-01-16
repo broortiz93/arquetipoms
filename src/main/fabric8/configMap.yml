@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-jso-fwk-fuse-consumer
+data:
+  application.properties: |-
+    # ===================================================================
+    # Propiedades geenrales de la aplicación
+    # ===================================================================
+    #Dirección IP por la que escucha el servidor
+    server.address=0.0.0.0
+    # Puerto por defecto donde escucha el servidor
+    server.port=8080
+    
+    # ===================================================================
+    # Propiedades geenrales de actuator
+    # ===================================================================
+    #Puerto de administracion
+    management.port=8181
+    # Puntos de actuator expuestos
+    management.endpoints.web.exposure.include=health,info
+    # Detalle del servicio expuesto por actuator
+    management.endpoint.health.show-details=never
+    
+    # ===================================================================
+    # Propiedades geenrales del log
+    # ===================================================================
+    # Modo "debug" del log activado
+    debug=false
+    # Modo "trace" del log activado
+    trace=false
+    # Configuración del LOG
+    logging.config=classpath:logback.xml
+    
+    # ===================================================================
+    # Configuración de la conexión Ampq 
+    # ("amqp.host" es sobreescrito en Openshift usando 
+    # src/main/fabric8/deployment.yml)
+    # ===================================================================
+    amqp.host=broker-amq-amqp
+    amqp.port=5672
+    amqp.username=AMQUser
+    amqp.password=iefni9484isdfni3292
+    
+    # ===================================================================
+    # PROPIEDADES PERSONALIZADAS DE LA APLICACION
+    #
+    # ===================================================================
+    
+    # ===================================================================
+    # Configuracin de JDBC
+    # ===================================================================
+    spring.datasource.driverClassName=com.informix.jdbc.IfxDriver
+    spring.datasource.url=jdbc:informix-sqli://10.26.168.19:21525/bdinteg:INFORMIXSERVER=coppel_tcp;IFX_LOCK_MODE_WAIT=3;IFX_ISOLATION_LEVEL=1;
+    spring.datasource.username=userCppel
+    spring.datasource.password=C0pp3I_08$wop*w1st6tp6r
+    
+    spring.datasource.initialization-mode=always
+    spring.datasource.initialize=true
+    spring.datasource.continue-on-error=true

@@ -1,0 +1,340 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "BanCoppel AMQ-Fuse DB Services",
+        "description": "Demostración del  uso de AMQ + Fuse para el manejo  de servicios de BD",
+        "contact": {
+            "name": "Dante Murillo",
+            "url": "https://javanes.com",
+            "email": "dante.murillo@javanes.com"
+        },
+        "license": {
+            "name": "GNU GPLv3",
+            "url": "https://www.gnu.org/licenses/gpl.txt"
+        },
+        "version": "ALFA-1.0.0"
+    },
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/contrato/{numcte}": {
+            "get": {
+                "summary": "Consulta de contratos",
+                "description": "Consulta el estado de un  contrato para un cliente dado",
+                "responses": {
+                    "200": {
+                        "description": "El contrato fue consultado exitosamente",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Contrato"
+                            }
+                        },
+                        "examples": {
+                            "application/json": "[\n    {\n        \"folioContrato\": \"some text\",\n        \"idStatus\": 26\n    },\n    {\n        \"folioContrato\": \"some text\",\n        \"idStatus\": 98\n    }\n]"
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "numcte",
+                    "in": "path",
+                    "description": "Número de cliente",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/sesion": {
+            "post": {
+                "summary": "Consulta de sesión",
+                "description": "Consulta el estado de una sesion para un  cliente dado sobre una aplicación",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Datos de consulta",
+                        "schema": {
+                            "$ref": "#/definitions/ReqSesion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "La consulta fue realizada exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/Respuesta"
+                        },
+                        "examples": {
+                            "application/json": "{\n    \"respuesta\": \"000\"\n}"
+                        }
+                    }
+                }
+            }
+        },
+        "/banco/{cvebco}": {
+            "get": {
+                "summary": "Banco por clave",
+                "description": "Obtiene los datos del banco por clave.",
+                "responses": {
+                    "200": {
+                        "description": "Información procesada",
+                        "schema": {
+                            "$ref": "#/definitions/Banco"
+                        },
+                        "examples": {
+                            "application/json": "{\n    \"ccodret\": \"000000\",\n    \"cvebanco\": 137,\n    \"descripcion\": \"BANCOPPEL, S. A.\",\n    \"tipobanco\": \"D\",\n    \"cvesif\": 40137,\n    \"nombrecorto\": \"BANCOPPEL\",\n    \"flagdomir\": 1,\n    \"flagdomip\": 1\n}"
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "cvebco",
+                    "in": "path",
+                    "description": "Clave Banco",
+                    "required": true,
+                    "type": "integer"
+                }
+            ]
+        },
+        "/nombre/{emp}/{numcte}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "La operación ha sido efectuada exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/Respuesta"
+                        },
+                        "examples": {
+                            "application/json": "{\"respuesta\":\"RUBIO                     \"}"
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "emp",
+                    "in": "path",
+                    "description": "Empresa",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "numcte",
+                    "in": "path",
+                    "description": "Número de cliente",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/bitacora": {
+            "post": {
+                "summary": "Inserta datos en la bitacora.",
+                "description": "Descripcion",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/Bitacora"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "La información fue a la bitácora.",
+                        "schema": {
+                            "$ref": "#/definitions/Respuesta"
+                        },
+                        "examples": {
+                            "application/json": "{\n    \"respuesta\": \"000\"\n}"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ReqSesion": {
+            "description": "Datos de entrada para el llamado  al Stored Procedure",
+            "required": [
+                "numeroCliente",
+                "aplicacion",
+                "fecha",
+                "parametro"
+            ],
+            "properties": {
+                "numeroCliente": {
+                    "description": "Número de  cliente",
+                    "type": "string"
+                },
+                "aplicacion": {
+                    "description": "Identificador de la  aplicación",
+                    "type": "string"
+                },
+                "fecha": {
+                    "description": "Fecha de consulta (esta fecha es requerida en formato de texto por requerimientos del SP)",
+                    "type": "string"
+                },
+                "parametro": {
+                    "description": "Parametro  adicional que es  requerido para la consulta",
+                    "type": "string"
+                }
+            },
+            "example": "{\n    \"numeroCliente\": \"005033981\",\n    \"aplicacion\": \"BEX\",\n    \"fecha\": \"20190520_085917\",\n    \"parametro\": \"9621140411\"\n}"
+        },
+        "Contrato": {
+            "description": "Estado del contrato",
+            "properties": {
+                "folio_contrato": {
+                    "description": "Fólio del contrato",
+                    "type": "string"
+                },
+                "id_status": {
+                    "description": "Estado del contrato",
+                    "type": "integer"
+                }
+            },
+            "example": "{\n    \"folioContrato\": \"001441029V46\",\n    \"idStatus\": 30\n}"
+        },
+        "Banco": {
+            "description": "Información del Banco",
+            "properties": {
+                "ccodret": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                },
+                "cvebanco": {
+                    "description": "Pendiente de definir.",
+                    "type": "integer"
+                },
+                "descripcion": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                },
+                "tipobanco": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                },
+                "cvesif": {
+                    "description": "Pendiente de definir.",
+                    "type": "integer"
+                },
+                "nombrecorto": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                },
+                "flagdomir": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                },
+                "flagdomip": {
+                    "description": "Pendiente de definir.",
+                    "type": "string"
+                }
+            },
+            "example": "{\n    \"ccodret\": \"000000\",\n    \"cvebanco\": 137,\n    \"descripcion\": \"BANCOPPEL, S. A.\",\n    \"tipobanco\": \"D\",\n    \"cvesif\": 40137,\n    \"nombrecorto\": \"BANCOPPEL\",\n    \"flagdomir\": \"1\",\n    \"flagdomip\": \"1\"\n}"
+        },
+        "Bitacora": {
+            "description": "Información  para la bitacora",
+            "required": [],
+            "properties": {
+                "fechaOperacion": {
+                    "format": "date-time",
+                    "description": "Fecha de la operación",
+                    "type": "string"
+                },
+                "numTrans": {
+                    "description": "Número  de transacción",
+                    "type": "string"
+                },
+                "numSuc": {
+                    "description": "Número de sucursal",
+                    "type": "string"
+                },
+                "idUsuario": {
+                    "description": "Id Usuario",
+                    "type": "integer"
+                },
+                "ipUsuario": {
+                    "description": "Ip del usuario",
+                    "type": "string"
+                },
+                "fechaAplicado": {
+                    "format": "date",
+                    "description": "Fecha de aplicación",
+                    "type": "string"
+                },
+                "cuentaOrigen": {
+                    "description": "Cuenta Origen",
+                    "type": "string"
+                },
+                "cuentaDestino": {
+                    "description": "Cuenta destino",
+                    "type": "string"
+                },
+                "monto": {
+                    "format": "double",
+                    "description": "Monto",
+                    "type": "number"
+                },
+                "transac": {
+                    "description": "Transac",
+                    "type": "string"
+                },
+                "valGenerico1": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "valGenerico2": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "valGenerico3": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "valGenerico4": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "valGenerico5": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "valGenerico6": {
+                    "description": "Valor generico",
+                    "type": "string"
+                },
+                "referencia": {
+                    "description": "Referencia",
+                    "type": "string"
+                },
+                "folio": {
+                    "description": "Folio",
+                    "type": "string"
+                }
+            },
+            "example": "{\n    \"fechaOperacion\": \"2018-02-10 09:30 Z\",\n    \"numTrans\": \"1016\",\n    \"numSuc\": \"5003\",\n    \"idUsuario\": 1513202,\n    \"ipUsuario\": \"10.44.33.60\",\n    \"fechaAplicado\": \"2018-01-17\",\n    \"cuentaOrigen\": \"10337659417\",\n    \"cuentaDestino\": \"10382536601\",\n    \"monto\": 93.68,\n    \"transac\": \"1131\",\n    \"valGenerico1\": \"\",\n    \"valGenerico2\": \"\",\n    \"valGenerico3\": \"\",\n    \"valGenerico4\": \"\",\n    \"valGenerico5\": \"\",\n    \"valGenerico6\": \"\",\n    \"referencia\": \"gastos\",\n    \"folio\": \"0151320222243723\"\n}"
+        },
+        "Respuesta": {
+            "title": "Root Type for Respuesta",
+            "description": "Código  de respuesta",
+            "type": "object",
+            "properties": {
+                "respuesta": {
+                    "description": "Código de respuesta",
+                    "type": "string"
+                }
+            },
+            "example": "{\n    \"respuesta\": \"000  \"\n}"
+        }
+    }
+}

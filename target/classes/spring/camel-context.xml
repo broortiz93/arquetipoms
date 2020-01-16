@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean class="com.javanes.framework.model.process.ContratoProcessor" id="contrato-processor">
+        <description>Procesa la salida del query de contratos.</description>
+    </bean>
+    <bean class="com.javanes.framework.model.process.SesionProcessor" id="sesion-processor">
+        <description>Procesa la salida del stored procedure de sesion.</description>
+    </bean>
+    <bean class="com.javanes.framework.model.process.BancoProcessor" id="banco-processor">
+        <description>Procesa la salida del stored procedure de banco.</description>
+    </bean>
+    <bean class="com.javanes.framework.model.process.NombreProcessor" id="nombre-processor">
+        <description>Procesa la salida del stored procedure de nombre.</description>
+    </bean>
+    <bean class="com.javanes.framework.model.process.BitacoraProcessor" id="bitacora-processor">
+        <description>Procesa la salida del stored procedure de bitacora.</description>
+    </bean>
+    <camelContext id="context-core-services" xmlns="http://camel.apache.org/schema/spring">
+        <endpoint id="sql-post-bitacora" uri="sql-stored:classpath:sql-querys/post-bitacora.sql"/>
+        <endpoint id="sql-get-nombre-emp-numcte" uri="sql-stored:classpath:sql-querys/get-nombre-emp-numcte.sql"/>
+        <endpoint id="sql-get-banco-cvebco" uri="sql-stored:classpath:sql-querys/get-banco-cvebco.sql"/>
+        <endpoint id="sql-post-sesion" uri="sql-stored:classpath:sql-querys/post-sesion.sql"/>
+        <endpoint id="sql-get-contrato-numcte" uri="sql:classpath:sql-querys/get-contrato-numcte.sql"/>
+        <dataFormats>
+            <json id="sql-parameter-map" library="Jackson" unmarshalTypeName="java.util.Map"/>
+        </dataFormats>
+        <onException>
+            <exception>java.lang.Exception</exception>
+            <handled>
+                <constant>true</constant>
+            </handled>
+            <to id="log-exception" uri="log:exchangeLog?level=WARN&amp;multiline=true&amp;showAll=true"/>
+            <setHeader headerName="Exchange.HTTP_RESPONSE_CODE">
+                <constant>500</constant>
+            </setHeader>
+            <setBody>
+                <simple>${exception.message}</simple>
+            </setBody>
+        </onException>
+        <restConfiguration apiContextPath="/openapi.json"
+            bindingMode="off" component="servlet"/>
+        <rest enableCORS="true" id="rest-openapi" path="/">
+            <get id="openapi.json" produces="application/json" uri="openapi.json">
+                <description>Obtiene el swagger (openapi.json) para este servicio</description>
+                <route id="rest-route-openapi">
+                    <setHeader headerName="Exchange.CONTENT_TYPE" id="setHeader-route-openapi">
+                        <constant>application/vnd.oai.openapi+json</constant>
+                    </setHeader>
+                    <setBody id="setBody-route-openapi">
+                        <simple>resource:classpath:openapi.json</simple>
+                    </setBody>
+                </route>
+            </get>
+        </rest>
+        <rest bindingMode="json" enableCORS="true" id="rest-definicion">
+            <post consumes="application/json" id="id-post-bitacora"
+                produces="application/json" uri="/bitacora">
+                <param description="Datos del servicio" name="body"
+                    required="true" type="body"/>
+                <to uri="direct:post-bitacora"/>
+            </post>
+            <get id="id-get-nombre-emp-numcte"
+                produces="application/json" uri="/nombre/{emp}/{numcte}">
+                <param description="Empresa" name="emp" required="true" type="path"/>
+                <param description="Número de cliente" name="numcte"
+                    required="true" type="path"/>
+                <to uri="direct:get-nombre-emp-numcte"/>
+            </get>
+            <get id="id-get-banco-cvebco" produces="application/json" uri="/banco/{cvebco}">
+                <param description="Clave del banco" name="cvebco"
+                    required="true" type="path"/>
+                <to uri="direct:get-banco-cvebco"/>
+            </get>
+            <post consumes="application/json" id="id-post-sesion"
+                produces="application/json" uri="/sesion">
+                <param description="Datos del servicio" name="body"
+                    required="true" type="body"/>
+                <to uri="direct:post-sesion"/>
+            </post>
+            <get id="id-get-contrato-numcte" produces="application/json" uri="/contrato/{numcte}">
+                <param description="Número de cliente" name="numcte"
+                    required="true" type="path"/>
+                <to uri="direct:get-contrato-numcte"/>
+            </get>
+        </rest>
+        <route id="route-error-501">
+            <from id="from-direct-501" uri="direct:501"/>
+            <log id="log-error-501" loggingLevel="WARN" message="API no implementada: ${headers.CamelHttpMethod} ${headers.CamelHttpPath}"/>
+            <setHeader headerName="Exchange.HTTP_RESPONSE_CODE" id="setHeader-error-501">
+                <constant>501</constant>
+            </setHeader>
+            <setBody id="setBody-error-501">
+                <simple>{"message", "API no implementada: ${headers.CamelHttpMethod} ${headers.CamelHttpPath}"}</simple>
+            </setBody>
+        </route>
+        <route id="route-post-bitacora">
+            <from id="from-post-bitacora" uri="direct:post-bitacora"/>
+            <to id="log-post-bitacora" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <to id="queue-post-bitacora" pattern="InOut" uri="amqp:queue:queue-post-bitacora?testConnectionOnStartup=true"/>
+            <to id="log-post-bitacora-result" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <unmarshal id="unmarshal-post-bitacora">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Bitacora"/>
+            </unmarshal>
+            <removeHeaders id="removeHeaders-post-bitacora" pattern="JMS*"/>
+        </route>
+        <route id="route-get-nombre-emp-numcte">
+            <from id="from-get-nombre-emp-numcte" uri="direct:get-nombre-emp-numcte"/>
+            <to id="log-get-nombre-emp-numcte" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <to id="queue-get-nombre-emp-numcte" pattern="InOut" uri="amqp:queue-get-nombre-emp-numcte?testConnectionOnStartup=true"/>
+            <to id="log-get-nombre-emp-numcte-result" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <unmarshal id="unmarshal-get-nombre-emp-numcte">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Nombre"/>
+            </unmarshal>
+            <removeHeaders id="removeHeaders-get-nombre-emp-numcte" pattern="JMS*"/>
+        </route>
+        <route id="route-get-banco-cvebco">
+            <from id="from-get-banco-cvebco" uri="direct:get-banco-cvebco"/>
+            <to id="log-get-banco-cvebco" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <to id="queue-get-banco-cvebco" pattern="InOut" uri="amqp:queue-get-banco-cvebco?testConnectionOnStartup=true"/>
+            <to id="log-get-banco-cvebco-result" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <unmarshal id="unmarshal-get-banco-cvebco">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Banco"/>
+            </unmarshal>
+            <removeHeaders id="removeHeaders-get-banco-cvebco" pattern="JMS*"/>
+        </route>
+        <route id="route-post-sesion">
+            <from id="from-post-sesion" uri="direct:post-sesion"/>
+            <to id="log-post-sesion" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <to id="queue-post-sesion" pattern="InOut" uri="amqp:queue-post-sesion?testConnectionOnStartup=true"/>
+            <to id="log-post-sesion-result" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <unmarshal id="unmarshal-post-sesion">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Sesion"/>
+            </unmarshal>
+            <removeHeaders id="removeHeaders-post-sesion" pattern="JMS*"/>
+        </route>
+        <route id="route-get-contrato-numcte">
+            <from id="from-get-contrato-numcte" uri="direct:get-contrato-numcte"/>
+            <to id="log-get-contrato-numcte" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <to id="queue-get-contrato-numcte" pattern="InOut" uri="amqp:queue-get-contrato-numcte?testConnectionOnStartup=true"/>
+            <to id="log-get-contrato-numcte-result" uri="log:exchangeLog?level=TRACE&amp;multiline=true&amp;showAll=true"/>
+            <unmarshal id="unmarshal-get-contrato-numcte">
+                <json library="Jackson"
+                    unmarshalTypeName="com.javanes.framework.model.Contrato" useList="true"/>
+            </unmarshal>
+            <removeHeaders id="removeHeaders-get-contrato-numcte" pattern="JMS*"/>
+        </route>
+        <route id="routeq-post-bitacora">
+            <from id="from-queue-post-bitacora" uri="amqp:queue:queue-post-bitacora?testConnectionOnStartup=true"/>
+            <to id="log-queue-post-bitacora" uri="log:exchangeLog?level=DEBUG&amp;multiline=true&amp;showAll=true"/>
+            <to id="to-sql-post-bitacora" uri="ref:sql-post-bitacora"/>
+            <log id="log-sql-post-bitacora" logName="exchangeLog"
+                loggingLevel="DEBUG" message="${body}"/>
+            <to id="to-bean-post-bitacora" uri="bean:bitacora-processor"/>
+            <marshal id="marshal-post-bitacora">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Nombre"/>
+            </marshal>
+        </route>
+        <route id="routeq-get-nombre-emp-numcte">
+            <from id="from-queue-get-nombre-emp-numcte" uri="amqp:queue:queue-get-nombre-emp-numcte?testConnectionOnStartup=true"/>
+            <to id="log-queue-queue-get-nombre-emp-numcte" uri="log:exchangeLog?level=DEBUG&amp;multiline=true&amp;showAll=true"/>
+            <to id="to-sql-get-nombre-emp-numcte" uri="ref:sql-get-nombre-emp-numcte"/>
+            <log id="log-sql-get-nombre-emp-numcte"
+                logName="exchangeLog" loggingLevel="DEBUG" message="${body}"/>
+            <to id="to-bean-get-nombre-emp-numcte" uri="bean:nombre-processor"/>
+            <marshal id="marshal-get-nombre-emp-numcte">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Nombre"/>
+            </marshal>
+        </route>
+        <route id="routeq-get-banco-cvebco">
+            <from id="from-queue-get-banco-cvebco" uri="amqp:queue:queue-get-banco-cvebco?testConnectionOnStartup=true"/>
+            <to id="log-queue-queue-get-banco-cvebco" uri="log:exchangeLog?level=DEBUG&amp;multiline=true&amp;showAll=true"/>
+            <to id="to-sql-get-banco-cvebco" uri="ref:sql-get-banco-cvebco"/>
+            <log id="log-sql-get-banco-cvebco" logName="exchangeLog"
+                loggingLevel="DEBUG" message="${body}"/>
+            <to id="to-bean-get-banco-cvebco" uri="bean:banco-processor"/>
+            <marshal id="marshal-get-banco-cvebco">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Banco"/>
+            </marshal>
+        </route>
+        <route id="routeq-post-sesion">
+            <from id="from-queue-post-sesion" uri="amqp:queue:queue-post-sesion?testConnectionOnStartup=true"/>
+            <to id="log-queue-queue-post-sesion" uri="log:exchangeLog?level=DEBUG&amp;multiline=true&amp;showAll=true"/>
+            <to id="to-sql-post-sesion" uri="ref:sql-post-sesion"/>
+            <log id="log-sql-post-sesion" logName="exchangeLog"
+                loggingLevel="DEBUG" message="${body}"/>
+            <to id="to-bean-post-sesion" uri="bean:sesion-processor"/>
+            <marshal id="marshal-post-sesion">
+                <json library="Jackson" unmarshalTypeName="com.javanes.framework.model.Sesion"/>
+            </marshal>
+        </route>
+        <route id="routeq-get-contrato-numcte">
+            <from id="from-queue-get-contrato-numcte" uri="amqp:queue:queue-get-contrato-numcte?testConnectionOnStartup=true"/>
+            <to id="log-queue-queue-get-contrato-numcte" uri="log:exchangeLog?level=DEBUG&amp;multiline=true&amp;showAll=true"/>
+            <to id="to-sql-get-contrato-numcte" uri="ref:sql-get-contrato-numcte"/>
+            <log id="log-sql-get-contrato-numcte" logName="exchangeLog"
+                loggingLevel="DEBUG" message="${body}"/>
+            <to id="to-bean-get-contrato-numcte" uri="bean:contrato-processor"/>
+            <marshal id="marshal-get-contrato-numcte">
+                <json library="Jackson"
+                    unmarshalTypeName="com.javanes.framework.model.Contrato" useList="true"/>
+            </marshal>
+        </route>
+    </camelContext>
+</beans>

@@ -1,0 +1,1 @@
+bdinteg:"informix".sp_obtienebancos (VARCHAR ${headers.cvebco})

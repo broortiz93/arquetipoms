@@ -1,0 +1,95 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+    fabric8.io/iconUrl: img/icons/camel.svg
+    fabric8.io/git-branch: master
+    fabric8.io/metrics-path: dashboard/file/camel-routes.json/?var-project=jso-fwk-fuse-amq&var-version=ALFA-1.0.0-5
+  labels:
+    app: ARQUETIPOS-FUSE
+    provider: fabric8
+    version: ALFA-1.0.0-5
+    group: com.javanes.framework
+  name: jso-fwk-fuse-amq
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: jso-fwk-fuse-amq
+      provider: fabric8
+      group: com.javanes.framework
+  template:
+    metadata:
+      annotations:
+        fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+        fabric8.io/iconUrl: img/icons/camel.svg
+        fabric8.io/git-branch: master
+        fabric8.io/metrics-path: dashboard/file/camel-routes.json/?var-project=jso-fwk-fuse-amq&var-version=ALFA-1.0.0-5
+      labels:
+        app: jso-fwk-fuse-amq
+        provider: fabric8
+        version: ALFA-1.0.0-5
+        group: com.javanes.framework
+    spec:
+      containers:
+      - env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: default
+        - name: JAVA_TOOL_OPTIONS
+          value: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: framework/jso-fwk-fuse-amq:ALFA-1.0.0-5
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8181
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+        name: spring-boot
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9779
+          name: prometheus
+          protocol: TCP
+        - containerPort: 8778
+          name: jolokia
+          protocol: TCP
+        - containerPort: 8181
+          name: actuator
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8181
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 200m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 192Mi
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /deployments/config
+          name: application-config
+      volumes:
+      - configMap:
+          name: cm-jso-fwk-fuse-consumer
+        name: application-config

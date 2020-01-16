@@ -1,0 +1,167 @@
+---
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      discovery.3scale.net/discovery-version: v1
+      discovery.3scale.net/description-path: /openapi.json
+      discovery.3scale.net/scheme: http
+      discovery.3scale.net/port: "8080"
+      fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+      fabric8.io/iconUrl: img/icons/camel.svg
+      fabric8.io/git-branch: master
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9779"
+    labels:
+      discovery.3scale.net: "true"
+      app: jso-fwk-fuse-amq
+      provider: fabric8
+      version: ALFA-1.0.0-5
+      group: com.javanes.framework
+    name: jso-fwk-fuse-amq
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: jso-fwk-fuse-amq
+      provider: fabric8
+      group: com.javanes.framework
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      app: jso-fwk-fuse-amq
+      provider: fabric8
+      version: ALFA-1.0.0-5
+      group: com.javanes.framework
+    name: cm-jso-fwk-fuse-consumer
+  data:
+    application.properties: "# ===================================================================\n\
+      # Propiedades geenrales de la aplicación\n# ===================================================================\n\
+      #Dirección IP por la que escucha el servidor\nserver.address=0.0.0.0\n# Puerto\
+      \ por defecto donde escucha el servidor\nserver.port=8080\n\n# ===================================================================\n\
+      # Propiedades geenrales de actuator\n# ===================================================================\n\
+      #Puerto de administracion\nmanagement.port=8181\n# Puntos de actuator expuestos\n\
+      management.endpoints.web.exposure.include=health,info\n# Detalle del servicio\
+      \ expuesto por actuator\nmanagement.endpoint.health.show-details=never\n\n#\
+      \ ===================================================================\n# Propiedades\
+      \ geenrales del log\n# ===================================================================\n\
+      # Modo \"debug\" del log activado\ndebug=false\n# Modo \"trace\" del log activado\n\
+      trace=false\n# Configuración del LOG\nlogging.config=classpath:logback.xml\n\
+      \n# ===================================================================\n# Configuració\
+      n de la conexión Ampq \n# (\"amqp.host\" es sobreescrito en Openshift usando\
+      \ \n# src/main/fabric8/deployment.yml)\n# ===================================================================\n\
+      amqp.host=broker-amq-amqp\namqp.port=5672\namqp.username=AMQUser\namqp.password=iefni9484isdfni3292\n\
+      \n# ===================================================================\n# PROPIEDADES\
+      \ PERSONALIZADAS DE LA APLICACION\n#\n# ===================================================================\n\
+      \n# ===================================================================\n# Configuracin\
+      \ de JDBC\n# ===================================================================\n\
+      spring.datasource.driverClassName=com.informix.jdbc.IfxDriver\nspring.datasource.url=jdbc:informix-sqli://10.26.168.19:21525/bdinteg:INFORMIXSERVER=coppel_tcp;IFX_LOCK_MODE_WAIT=3;IFX_ISOLATION_LEVEL=1;\n\
+      spring.datasource.username=userCppel\nspring.datasource.password=C0pp3I_08$wop*w1st6tp6r\n\
+      \nspring.datasource.initialization-mode=always\nspring.datasource.initialize=true\n\
+      spring.datasource.continue-on-error=true"
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+      fabric8.io/iconUrl: img/icons/camel.svg
+      fabric8.io/git-branch: master
+      fabric8.io/metrics-path: dashboard/file/camel-routes.json/?var-project=jso-fwk-fuse-amq&var-version=ALFA-1.0.0-5
+    labels:
+      app: ARQUETIPOS-FUSE
+      provider: fabric8
+      version: ALFA-1.0.0-5
+      group: com.javanes.framework
+    name: jso-fwk-fuse-amq
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+      app: jso-fwk-fuse-amq
+      provider: fabric8
+      group: com.javanes.framework
+    strategy:
+      rollingParams:
+        timeoutSeconds: 3600
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          fabric8.io/git-commit: 1da617921b5d9294c586a7fe6476c3a16ee11860
+          fabric8.io/iconUrl: img/icons/camel.svg
+          fabric8.io/git-branch: master
+          fabric8.io/metrics-path: dashboard/file/camel-routes.json/?var-project=jso-fwk-fuse-amq&var-version=ALFA-1.0.0-5
+        labels:
+          app: jso-fwk-fuse-amq
+          provider: fabric8
+          version: ALFA-1.0.0-5
+          group: com.javanes.framework
+      spec:
+        containers:
+        - env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: default
+          - name: JAVA_TOOL_OPTIONS
+            value: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          image: framework/jso-fwk-fuse-amq:ALFA-1.0.0-5
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8181
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: spring-boot
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 8181
+            name: actuator
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 8181
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 200m
+              memory: 384Mi
+            requests:
+              cpu: 100m
+              memory: 192Mi
+          securityContext:
+            privileged: false
+          volumeMounts:
+          - mountPath: /deployments/config
+            name: application-config
+        volumes:
+        - configMap:
+            name: cm-jso-fwk-fuse-consumer
+          name: application-config
+    triggers:
+    - type: ConfigChange
